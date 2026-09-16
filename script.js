@@ -1,15 +1,4 @@
-const themes = [
-    { name: "Classique", logo: "🧩", bg: "#f4f4f9", text: "#333333", primary: "#4a90e2", gridBorder: "#333333", cellBg: "#ffffff", readonlyBg: "#e8e8e8", userColor: "#4a90e2", font: "'Segoe UI', Roboto, sans-serif" },
-    { name: "Café & Papier", logo: "☕", bg: "#f5f0eb", text: "#4a3b32", primary: "#8c6d58", gridBorder: "#4a3b32", cellBg: "#fcfaf7", readonlyBg: "#ebdcd0", userColor: "#a6522c", font: "Georgia, serif" },
-    { name: "Néon Cyber", logo: "⚡", bg: "#12121e", text: "#00ffcc", primary: "#ff007f", gridBorder: "#00ffcc", cellBg: "#1a1a2e", readonlyBg: "#0f3460", userColor: "#ff007f", font: "'Courier New', monospace" },
-    { name: "Zen Printemps", logo: "🌸", bg: "#f0f7f4", text: "#2d5a27", primary: "#52b788", gridBorder: "#2d5a27", cellBg: "#ffffff", readonlyBg: "#d8f3dc", userColor: "#1b4332", font: "'Trebuchet MS', sans-serif" },
-    { name: "Nuit Étoilée", logo: "🌙", bg: "#0b132b", text: "#e0e1dd", primary: "#48cae4", gridBorder: "#48cae4", cellBg: "#1c2541", readonlyBg: "#3a506b", userColor: "#ffd166", font: "Garamond, serif" },
-    { name: "Océan", logo: "🌊", bg: "#e0f4f7", text: "#004e64", primary: "#00a896", gridBorder: "#004e64", cellBg: "#ffffff", readonlyBg: "#a8dadc", userColor: "#028090", font: "Arial, sans-serif" },
-    { name: "Forêt d'Automne", logo: "🌲", bg: "#fefae0", text: "#283618", primary: "#dda15e", gridBorder: "#283618", cellBg: "#ffffff", readonlyBg: "#e9edc9", userColor: "#bc6c25", font: "'Palatino Linotype', serif" },
-    { name: "Rétro Arcade", logo: "🎮", bg: "#2b2d42", text: "#edf2f4", primary: "#ef233c", gridBorder: "#8d99ae", cellBg: "#1d1e2c", readonlyBg: "#3d405b", userColor: "#ffb703", font: "'Impact', 'Arial Black', sans-serif" },
-    { name: "Japon Encre", logo: "⛩️", bg: "#faf8f5", text: "#111111", primary: "#d90429", gridBorder: "#111111", cellBg: "#ffffff", readonlyBg: "#e5e5e5", userColor: "#d90429", font: "'Times New Roman', serif" },
-    { name: "Cépia Vintage", logo: "📜", bg: "#f4ebd9", text: "#3d312a", primary: "#b07d62", gridBorder: "#3d312a", cellBg: "#faf6ee", readonlyBg: "#e3d5ca", userColor: "#6b4d3e", font: "Verdana, sans-serif" }
-];
+const THEMES = ['theme1', 'theme2'];
 
 let startTime;
 let timerInterval;
@@ -18,29 +7,31 @@ let fullBoard;
 let puzzleBoard;
 let currentDifficulty = 'moyen';
 let celluleSelectionnee = null;
-let modeNotesActive = false; // Variable pour le mode Notes
+let modeNotesActive = false;
 
-// --- THÈME ET TEMPS ---
-function appliquerThemeDuJour() {
+// --- GESTION DES THÈMES ---
+function choisirThemeAleatoire() {
+    const themeIndex = Math.floor(Math.random() * THEMES.length);
+    const themeSelectionne = THEMES[themeIndex];
+    
+    document.body.className = themeSelectionne;
+    
+    const logoImg = document.getElementById("logo-img");
+    if (logoImg) {
+        logoImg.src = `${themeSelectionne}/logo.png`;
+    }
+}
+
+// --- INITIALISATION DATE ET SEED ---
+function initialiserPartie() {
+    choisirThemeAleatoire();
+    
     let d = new Date();
     let options = { day: 'numeric', month: 'long', year: 'numeric' };
-    let seedJour = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    let theme = themes[seedJour % themes.length];
-
-    const root = document.documentElement;
-    root.style.setProperty('--bg-color', theme.bg);
-    root.style.setProperty('--text-color', theme.text);
-    root.style.setProperty('--primary-color', theme.primary);
-    root.style.setProperty('--grid-border', theme.gridBorder);
-    root.style.setProperty('--cell-bg', theme.cellBg);
-    root.style.setProperty('--readonly-bg', theme.readonlyBg);
-    root.style.setProperty('--user-color', theme.userColor);
-    root.style.setProperty('--font-family', theme.font);
-
-    document.getElementById("theme-name").innerText = `${theme.logo} ${theme.name}`;
-    document.getElementById("page-title").innerText = `Sudoku du ${d.toLocaleDateString('fr-FR', options)}`;
+    let dateStr = d.toLocaleDateString('fr-FR', options).toLowerCase();
+    document.getElementById("date-text").innerText = dateStr;
     
-    seed = seedJour;
+    seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
 
 function startTimer() {
@@ -54,7 +45,7 @@ function startTimer() {
     }, 1000);
 }
 
-// --- GÉNÉRATION SUDOKU ---
+// --- GÉNÉRATION DU SUDOKU ---
 function lcg() {
     seed = (seed * 1664525 + 1013904223) % 4294967296;
     return seed / 4294967296;
@@ -119,7 +110,7 @@ function createPuzzle(full, difficulty) {
     return puzzle;
 }
 
-// --- INTERFACE DU JEU ---
+// --- RENDU ET INTERACTIONS ---
 function chargerJeu(difficulty) {
     currentDifficulty = difficulty;
     
@@ -151,7 +142,6 @@ function renderBoard() {
             cellDiv.dataset.row = r;
             cellDiv.dataset.col = c;
             
-            // Grille pour les notes
             let notesGrid = document.createElement("div");
             notesGrid.className = "notes-grid";
             for(let i = 1; i <= 9; i++) {
@@ -161,7 +151,6 @@ function renderBoard() {
                 notesGrid.appendChild(noteSpan);
             }
             
-            // Gros chiffre
             let mainVal = document.createElement("div");
             mainVal.className = "main-value";
 
@@ -169,10 +158,12 @@ function renderBoard() {
                 mainVal.innerText = puzzleBoard[r][c];
                 cellDiv.classList.add("readonly");
             } else {
-                cellDiv.addEventListener("click", function() {
+                cellDiv.addEventListener("click", function(e) {
+                    e.stopPropagation();
                     deselectionnerToutes();
                     this.classList.add("selected");
                     celluleSelectionnee = this;
+                    updateSubgridBorders();
                 });
             }
 
@@ -181,23 +172,53 @@ function renderBoard() {
             boardDiv.appendChild(cellDiv);
         }
     }
+
+    updateSubgridBorders();
 }
 
-// --- GESTION DES NOTES ET SAISIE ---
-function toggleNotes() {
-    modeNotesActive = !modeNotesActive;
-    const btn = document.getElementById("btn-notes");
-    if (modeNotesActive) {
-        btn.classList.add("active");
-        btn.innerText = "✏️ Mode Notes : ACTIVÉ";
-    } else {
-        btn.classList.remove("active");
-        btn.innerText = "✏️ Mode Notes : DÉSACTIVÉ";
+function isDark(cell) {
+    if (!cell) return false;
+    return cell.classList.contains("readonly") || cell.classList.contains("selected");
+}
+
+function updateSubgridBorders() {
+    if (!document.body.classList.contains("theme1")) return;
+
+    const cells = document.getElementById("board").children;
+    if (!cells || cells.length !== 81) return;
+
+    for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+            let cellA = cells[r * 9 + c];
+
+            if (c === 2 || c === 5) {
+                let cellB = cells[r * 9 + (c + 1)];
+                if (isDark(cellA) && isDark(cellB)) {
+                    cellA.classList.add("subgrid-border-right-yellow");
+                } else {
+                    cellA.classList.remove("subgrid-border-right-yellow");
+                }
+            }
+
+            if (r === 2 || r === 5) {
+                let cellB = cells[(r + 1) * 9 + c];
+                if (isDark(cellA) && isDark(cellB)) {
+                    cellA.classList.add("subgrid-border-bottom-yellow");
+                } else {
+                    cellA.classList.remove("subgrid-border-bottom-yellow");
+                }
+            }
+        }
     }
 }
 
+function toggleNotes() {
+    modeNotesActive = !modeNotesActive;
+    const btn = document.getElementById("btn-notes");
+    btn.innerText = modeNotesActive ? "mode notes activé" : "mode notes désactivé";
+}
+
 function effacerNotesLiees(row, col, num) {
-    // Efface automatiquement la note "num" de toute la ligne, la colonne et le bloc
     const startRow = Math.floor(row / 3) * 3;
     const startCol = Math.floor(col / 3) * 3;
 
@@ -218,29 +239,20 @@ function saisirChiffre(num) {
     let mainVal = celluleSelectionnee.querySelector(".main-value");
     
     if (modeNotesActive) {
-        // En mode notes, on ne fait rien si un gros chiffre est déjà là
         if (mainVal.innerText !== "") return;
-        
         let noteSpan = celluleSelectionnee.querySelector(`.note-${num}`);
         noteSpan.classList.toggle("visible");
     } else {
-        // En mode normal
         let r = parseInt(celluleSelectionnee.dataset.row);
         let c = parseInt(celluleSelectionnee.dataset.col);
 
-        // Si on clique sur le même chiffre, on l'efface (pratique sur mobile)
         if (mainVal.innerText == num) {
             effacerCase();
             return;
         }
 
-        // Sinon, on place le chiffre
         mainVal.innerText = num;
-        
-        // On efface les notes de cette case
         celluleSelectionnee.querySelectorAll(".notes-grid span").forEach(s => s.classList.remove("visible"));
-        
-        // On efface cette note dans la ligne/colonne/bloc (Quality of Life)
         effacerNotesLiees(r, c, num);
         
         checkWin();
@@ -249,15 +261,12 @@ function saisirChiffre(num) {
 
 function effacerCase() {
     if (!celluleSelectionnee || celluleSelectionnee.classList.contains("readonly")) return;
-    
-    // On efface le gros chiffre
     celluleSelectionnee.querySelector(".main-value").innerText = "";
-    // On efface les notes
     celluleSelectionnee.querySelectorAll(".notes-grid span").forEach(s => s.classList.remove("visible"));
 }
 
 function clearAll() {
-    if(confirm("Voulez-vous vraiment effacer toute votre progression (chiffres et notes) ?")) {
+    if(confirm("Voulez-vous vraiment effacer toute votre progression ?")) {
         document.querySelectorAll('.cell:not(.readonly)').forEach(cell => {
             cell.querySelector(".main-value").innerText = "";
             cell.querySelectorAll(".notes-grid span").forEach(s => s.classList.remove("visible"));
@@ -267,11 +276,10 @@ function clearAll() {
 
 function deselectionnerToutes() {
     document.querySelectorAll('.cell').forEach(c => c.classList.remove("selected"));
+    updateSubgridBorders();
 }
 
-// --- GESTION DU CLAVIER ---
 window.addEventListener("keydown", function(e) {
-    // Si la touche "N" est pressée, on change de mode
     if (e.key.toLowerCase() === 'n') {
         toggleNotes();
         return;
@@ -286,7 +294,6 @@ window.addEventListener("keydown", function(e) {
     }
 });
 
-// Enlever la sélection en cliquant en dehors du plateau
 document.addEventListener("click", function(e) {
     const board = document.getElementById("board");
     const numpad = document.querySelector(".numpad");
@@ -298,7 +305,6 @@ document.addEventListener("click", function(e) {
     }
 });
 
-// --- VÉRIFICATION DE LA VICTOIRE ---
 function checkWin() {
     let inputs = document.querySelectorAll('.cell');
     for (let i = 0; i < 81; i++) {
@@ -313,10 +319,10 @@ function checkWin() {
     
     clearInterval(timerInterval);
     let msg = document.getElementById("victory-message");
-    msg.innerText = `Félicitations ! Vous avez résolu le Sudoku en ${document.getElementById("timer").innerText} !`;
+    msg.innerText = `félicitations ! résolu en ${document.getElementById("timer").innerText}`;
     msg.style.display = "block";
 }
 
 // --- DÉMARRAGE ---
-appliquerThemeDuJour();
+initialiserPartie();
 chargerJeu('moyen');

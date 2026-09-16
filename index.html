@@ -3,29 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sudoku du Jour</title>
+    <title>Sudoku</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1 id="page-title">Sudoku du...</h1>
+    <!-- Remplacer le src par le chemin de votre image logo -->
+    <div id="logo-container">
+        <img src="logo1.png" alt="SU DO KU" id="logo-img">
+    </div>
     
     <div class="difficulty-selector">
-        <button id="btn-facile" onclick="chargerJeu('facile')">Facile</button>
-        <button id="btn-moyen" onclick="chargerJeu('moyen')">Moyen</button>
-        <button id="btn-difficile" onclick="chargerJeu('difficile')">Difficile</button>
+        <button id="btn-facile" onclick="chargerJeu('facile')">facile</button>
+        <button id="btn-moyen" onclick="chargerJeu('moyen')">moyen</button>
+        <button id="btn-difficile" onclick="chargerJeu('difficile')">difficile</button>
     </div>
 
     <div class="info-panel">
-        <span id="theme-name">Thème du jour</span>
+        <span id="date-text"></span>
         <span id="timer">00:00</span>
+        <span id="btn-reset" onclick="clearAll()">reset</span>
     </div>
 
     <div class="sudoku-board" id="board"></div>
 
     <!-- Bouton Mode Notes -->
     <button id="btn-notes" class="btn-notes" onclick="toggleNotes()">
-        ✏️ Mode Notes : DÉSACTIVÉ
+        mode notes désactivé
     </button>
 
     <!-- Pavé numérique -->
@@ -39,11 +43,7 @@
         <button onclick="saisirChiffre(7)">7</button>
         <button onclick="saisirChiffre(8)">8</button>
         <button onclick="saisirChiffre(9)">9</button>
-        <button onclick="effacerCase()" class="btn-erase" title="Effacer la case">⌫</button>
-    </div>
-
-    <div class="controls">
-        <button onclick="clearAll()">Tout effacer</button>
+        <button onclick="effacerCase()" class="btn-erase" title="Effacer la case">←</button>
     </div>
 
     <div id="victory-message"></div>
