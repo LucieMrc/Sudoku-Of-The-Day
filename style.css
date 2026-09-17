@@ -725,8 +725,8 @@ body.theme4 .difficulty-selector button.active {
     box-sizing: border-box;
     font-family: Arial, sans-serif !important;
     
-    /* Positionné temporairement par-dessus l'écran pour la capture par html2canvas */
-    position: fixed;
+    /* MODIFICATION ICI : Absolute au lieu de Fixed */
+    position: absolute;
     top: 0;
     left: 0;
     z-index: 99999;

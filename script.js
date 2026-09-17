@@ -327,7 +327,6 @@ function checkWin() {
 // --- DÉMARRAGE DU JEU ---
 initialiserPartie();
 chargerJeu('moyen');
-
 // --- EASTER EGG : IMPRESSION 9 GRILLES EN PDF ---
 document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -352,10 +351,18 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const difficulty = activeDiffBtn ? activeDiffBtn.textContent.trim().toLowerCase() : currentDifficulty;
 
     const pdfPage = document.createElement('div');
-    // NOUVELLE LIGNE : Style uniforme neutre en Noir & Blanc
-    pdfPage.className = 'pdf-page';
+    pdfPage.className = 'pdf-page'; // Style neutre imposé
+
     // Sauvegarde de la seed de la partie en ligne
     const savedSeed = seed;
+
+    // --- CORRECTION DU PROBLÈME DE PAGE BLANCHE ---
+    // On déverrouille la hauteur de l'écran et on remonte tout en haut pour html2canvas
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyHeight = document.body.style.height;
+    document.body.style.overflow = 'visible';
+    document.body.style.height = 'auto';
+    window.scrollTo(0, 0);
 
     for (let i = 0; i < 9; i++) {
         const currentDate = new Date(startDate);
@@ -372,6 +379,8 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         if (difficulty === 'facile') seed += 1;
         else if (difficulty === 'difficile') seed += 2;
 
+        // --- CORRECTION DE L'ERREUR DE GÉNÉRATION ---
+        // Utilisation stricte des fonctions définies dans le script
         const full = generateFullBoard();
         const puzzleData = createPuzzle(full, difficulty).flat();
 
@@ -408,12 +417,9 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         pdfPage.appendChild(gridCard);
     }
 
-    // Restauration de la seed du joueur
-    seed = savedSeed;
-
     document.body.appendChild(pdfPage);
 
-const options = {
+    const options = {
         margin: 0,
         filename: `sudoku-9-grilles-${inputDate}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
@@ -432,6 +438,12 @@ const options = {
     } catch (err) {
         console.error("Erreur lors de la génération du PDF :", err);
     } finally {
+        // --- RESTAURATION DE L'AFFICHAGE ---
         document.body.removeChild(pdfPage);
+        document.body.style.overflow = originalBodyOverflow;
+        document.body.style.height = originalBodyHeight;
+        
+        // Restauration de la seed du joueur
+        seed = savedSeed;
     }
 });
