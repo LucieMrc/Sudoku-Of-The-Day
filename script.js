@@ -327,6 +327,7 @@ function checkWin() {
 // --- DÉMARRAGE DU JEU ---
 initialiserPartie();
 chargerJeu('moyen');
+
 // --- EASTER EGG : IMPRESSION 9 GRILLES EN PDF ---
 document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -334,7 +335,6 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     
     if (!inputDate) return;
 
-    // Découpage manuel de la date pour éviter les décalages de fuseau horaire UTC
     const parts = inputDate.split('-');
     if (parts.length !== 3) {
         alert("Format de date invalide.");
@@ -349,20 +349,26 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
 
     const activeDiffBtn = document.querySelector('.difficulty-selector button.active');
     const difficulty = activeDiffBtn ? activeDiffBtn.textContent.trim().toLowerCase() : currentDifficulty;
+    const currentThemeClass = document.body.className;
 
-    const pdfPage = document.createElement('div');
-    pdfPage.className = 'pdf-page'; // Style neutre imposé
-
-    // Sauvegarde de la seed de la partie en ligne
-    const savedSeed = seed;
-
-    // --- CORRECTION DU PROBLÈME DE PAGE BLANCHE ---
-    // On déverrouille la hauteur de l'écran et on remonte tout en haut pour html2canvas
+    // 1. Sauvegarde des styles du body
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyHeight = document.body.style.height;
+    const originalBodyDisplay = document.body.style.display;
+
+    // 2. Masquage temporaire de l'interface
+    const childrenToHide = Array.from(document.body.children);
+    childrenToHide.forEach(el => el.style.display = 'none');
+
+    // 3. Préparation du document pour html2canvas
     document.body.style.overflow = 'visible';
     document.body.style.height = 'auto';
-    window.scrollTo(0, 0);
+    document.body.style.display = 'block';
+
+    const pdfPage = document.createElement('div');
+    pdfPage.className = `pdf-page ${currentThemeClass}`;
+
+    const savedSeed = seed;
 
     for (let i = 0; i < 9; i++) {
         const currentDate = new Date(startDate);
@@ -374,25 +380,24 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
             year: 'numeric'
         });
 
-        // Recalcul de la seed officielle pour chaque jour
         seed = currentDate.getFullYear() * 10000 + (currentDate.getMonth() + 1) * 100 + currentDate.getDate();
         if (difficulty === 'facile') seed += 1;
         else if (difficulty === 'difficile') seed += 2;
 
-        // --- CORRECTION DE L'ERREUR DE GÉNÉRATION ---
-        // Utilisation stricte des fonctions définies dans le script
         const full = generateFullBoard();
         const puzzleData = createPuzzle(full, difficulty).flat();
 
         const gridCard = document.createElement('div');
         gridCard.className = 'pdf-grid-card';
-        gridCard.innerHTML = `
-            <div class="pdf-header">
-                <div class="pdf-title">SUDOKU</div>
-                <div class="pdf-badge-difficulty">${difficulty}</div>
+       gridCard.innerHTML = `
+        <div class="pdf-header">
+            <img src="${currentThemeClass}/logo_nb.png" class="pdf-logo" alt="Logo">
+            <div class="pdf-info-row">
+                <span class="pdf-date">${formattedDate}</span>
+                <span class="pdf-badge-difficulty">${difficulty}</span>
             </div>
-            <div class="pdf-date">${formattedDate}</div>
-            <div class="sudoku-board"></div>
+        </div>
+        <div class="sudoku-board"></div>
         `;
 
         const boardContainer = gridCard.querySelector('.sudoku-board');
@@ -414,21 +419,38 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
             boardContainer.appendChild(cell);
         });
 
+        // Gestion spécifique des séparateurs de sous-grilles foncées contiguës pour le Thème 1
+        if (currentThemeClass === 'theme1') {
+            const cells = boardContainer.children;
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    const idxA = r * 9 + c;
+                    if ((c === 2 || c === 5) && puzzleData[idxA] !== 0 && puzzleData[idxA + 1] !== 0) {
+                        cells[idxA].classList.add('border-right-white');
+                    }
+                    if ((r === 2 || r === 5) && puzzleData[idxA] !== 0 && puzzleData[idxA + 9] !== 0) {
+                        cells[idxA].classList.add('border-bottom-white');
+                    }
+                }
+            }
+        }
+
         pdfPage.appendChild(gridCard);
     }
 
     document.body.appendChild(pdfPage);
+
+    // Pause pour garantir la fin du rendu des images/polices
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     const options = {
         margin: 0,
         filename: `sudoku-9-grilles-${inputDate}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
-            scale: 2, 
+            scale: 3, // Résolution haute définition (300 DPI)
             logging: false,
-            useCORS: true,
-            scrollX: 0,
-            scrollY: 0
+            useCORS: true
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
@@ -438,12 +460,15 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     } catch (err) {
         console.error("Erreur lors de la génération du PDF :", err);
     } finally {
-        // --- RESTAURATION DE L'AFFICHAGE ---
-        document.body.removeChild(pdfPage);
+        // Restauration de l'état initial du site
+        if (document.body.contains(pdfPage)) {
+            document.body.removeChild(pdfPage);
+        }
+        childrenToHide.forEach(el => el.style.display = '');
         document.body.style.overflow = originalBodyOverflow;
         document.body.style.height = originalBodyHeight;
-        
-        // Restauration de la seed du joueur
+        document.body.style.display = originalBodyDisplay;
+
         seed = savedSeed;
     }
 });
