@@ -443,17 +443,18 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     // Pause pour garantir la fin du rendu des images/polices
     await new Promise(resolve => setTimeout(resolve, 150));
 
-    const options = {
-        margin: 0,
-        filename: `sudoku-9-grilles-${inputDate}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 3, // Résolution haute définition (300 DPI)
-            logging: false,
-            useCORS: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+const options = {
+    margin: 0,
+    filename: `sudoku-9-grilles-${inputDate}.pdf`,
+    image: { type: 'png' },
+    html2canvas: { 
+        scale: 4, // Monte la résolution à x4
+        logging: false,
+        useCORS: true,
+        windowWidth: 1600 // Force un rendu virtuel haute résolution indépendant de l'écran
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false }
+};
 
     try {
         await html2pdf().set(options).from(pdfPage).save();
