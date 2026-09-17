@@ -4,19 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sudoku</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Remplacer le src par le chemin de votre image logo -->
     <div id="logo-container">
-        <img src="logo1.png" alt="SU DO KU" id="logo-img">
-    </div>
-    
-    <div class="difficulty-selector">
-        <button id="btn-facile" onclick="chargerJeu('facile')">facile</button>
-        <button id="btn-moyen" onclick="chargerJeu('moyen')">moyen</button>
-        <button id="btn-difficile" onclick="chargerJeu('difficile')">difficile</button>
+        <img id="logo-img" src="" alt="SU DO KU">
     </div>
 
     <div class="info-panel">
@@ -27,12 +21,10 @@
 
     <div class="sudoku-board" id="board"></div>
 
-    <!-- Bouton Mode Notes -->
     <button id="btn-notes" class="btn-notes" onclick="toggleNotes()">
         mode notes désactivé
     </button>
 
-    <!-- Pavé numérique -->
     <div class="numpad">
         <button onclick="saisirChiffre(1)">1</button>
         <button onclick="saisirChiffre(2)">2</button>
@@ -44,6 +36,13 @@
         <button onclick="saisirChiffre(8)">8</button>
         <button onclick="saisirChiffre(9)">9</button>
         <button onclick="effacerCase()" class="btn-erase" title="Effacer la case">←</button>
+    </div>
+
+    <!-- NOUVEL EMPLACEMENT : Les boutons de difficulté -->
+    <div class="difficulty-selector">
+        <button id="btn-facile" onclick="chargerJeu('facile')">facile</button>
+        <button id="btn-moyen" onclick="chargerJeu('moyen')">moyen</button>
+        <button id="btn-difficile" onclick="chargerJeu('difficile')">difficile</button>
     </div>
 
     <div id="victory-message"></div>

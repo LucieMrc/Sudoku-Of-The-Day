@@ -1,4 +1,4 @@
-const THEMES = ['theme1', 'theme2'];
+const THEMES = ['theme1', 'theme2', 'theme3', 'theme4'];
 
 let startTime;
 let timerInterval;
@@ -215,7 +215,12 @@ function updateSubgridBorders() {
 function toggleNotes() {
     modeNotesActive = !modeNotesActive;
     const btn = document.getElementById("btn-notes");
+    
+    // Mise à jour du texte
     btn.innerText = modeNotesActive ? "mode notes activé" : "mode notes désactivé";
+    
+    // Ajout ou suppression de la classe "active" selon l'état du mode notes
+    btn.classList.toggle("active", modeNotesActive);
 }
 
 function effacerNotesLiees(row, col, num) {
@@ -326,3 +331,95 @@ function checkWin() {
 // --- DÉMARRAGE ---
 initialiserPartie();
 chargerJeu('moyen');
+
+// Déclencheur Easter Egg sur double-clic logo
+document.getElementById('logo-img').addEventListener('dblclick', async () => {
+    // 1. Demande de la date de départ
+    const todayStr = new Date().toISOString().split('T')[0];
+    const inputDate = prompt("Easter Egg activé !\nEntrez la date de début (AAAA-MM-JJ) :", todayStr);
+    
+    if (!inputDate) return;
+
+    const startDate = new Date(inputDate);
+    if (isNaN(startDate.getTime())) {
+        alert("Format de date invalide.");
+        return;
+    }
+
+    // 2. Récupération de la difficulté active dans l'interface
+    const activeDiffBtn = document.querySelector('.difficulty-selector button.active');
+    const difficulty = activeDiffBtn ? activeDiffBtn.textContent.trim() : 'facile';
+
+    // 3. Création du conteneur PDF A4 temporaire
+    const pdfPage = document.createElement('div');
+    // Conserve le nom du thème actif ('theme1', 'theme2', etc.) sur la page d'impression
+    pdfPage.className = `pdf-page ${document.body.className}`; 
+
+    // 4. Génération des 9 grilles
+    for (let i = 0; i < 9; i++) {
+        // Incrémentation de la date (+1 jour par grille)
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        
+        const formattedDate = currentDate.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        // Remplace 'generateNewPuzzle' par la fonction de ton projet qui renvoie un tableau de 81 valeurs
+        const puzzleData = generateNewPuzzle(difficulty); 
+
+        // Structure HTML d'une carte de grille
+        const gridCard = document.createElement('div');
+        gridCard.className = 'pdf-grid-card';
+        gridCard.innerHTML = `
+            <div class="pdf-header">
+                <div class="pdf-title">SUDOKU</div>
+                <div class="pdf-badge-difficulty">${difficulty}</div>
+            </div>
+            <div class="pdf-date">${formattedDate}</div>
+            <div class="sudoku-board"></div>
+        `;
+
+        const boardContainer = gridCard.querySelector('.sudoku-board');
+
+        // Remplissage des 81 cases de la grille
+        puzzleData.forEach((val, idx) => {
+            const cell = document.createElement('div');
+            const row = Math.floor(idx / 9);
+            const col = idx % 9;
+
+            cell.className = 'cell';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+
+            if (val !== 0) {
+                cell.classList.add('readonly');
+                cell.innerHTML = `<span class="main-value">${val}</span>`;
+            }
+
+            boardContainer.appendChild(cell);
+        });
+
+        pdfPage.appendChild(gridCard);
+    }
+
+    document.body.appendChild(pdfPage);
+
+    // 5. Configuration et exportation PDF
+    const options = {
+        margin: 0,
+        filename: `sudoku-9-grilles-${inputDate}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        await html2pdf().set(options).from(pdfPage).save();
+    } finally {
+        // Nettoyage de l'élément temporaire du DOM
+        document.body.removeChild(pdfPage);
+    }
+});

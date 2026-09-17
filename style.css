@@ -1,4 +1,3 @@
-/* Chargement des polices depuis les sous-dossiers */
 @font-face {
     font-family: 'Karrik';
     src: url('theme1/font.otf') format('opentype');
@@ -7,6 +6,11 @@
 @font-face {
     font-family: 'Abordage';
     src: url('theme2/font.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'Syne';
+    src: url('theme3/font.ttf') format('truetype');
 }
 
 * {
@@ -25,7 +29,9 @@ body {
     overflow: hidden;
 }
 
-/* --- THÈME 1 : Brutaliste Jaune --- */
+/* ==========================================
+   THÈME 1 : Brutaliste Jaune & Noir
+   ========================================== */
 body.theme1 {
     --bg-color: #f6e69f;
     --text-color: #000000;
@@ -35,15 +41,31 @@ body.theme1 {
     color: var(--text-color);
 }
 
-body.theme1 .cell.readonly {
-    background-color: var(--border-color);
-}
-body.theme1 .cell.readonly .main-value {
-    color: var(--bg-color);
-}
+body.theme1 #logo-img { width: 180px; }
+body.theme1 .cell.readonly { background-color: var(--border-color); }
+body.theme1 .cell.readonly .main-value { color: var(--bg-color); }
 body.theme1 .difficulty-selector button { border-radius: 0; }
 body.theme1 .numpad button { border-radius: 0; }
-/* --- THÈME 2 : Cyan & Bleu Pointillés --- */
+
+body.theme1 .sudoku-board {
+    border: 4px solid var(--border-color);
+}
+body.theme1 .cell {
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+body.theme1 .cell:nth-child(3n) { border-right: 4px solid var(--border-color); }
+body.theme1 .cell:nth-child(9n) { border-right: none; }
+body.theme1 .cell:nth-child(n+19):nth-child(-n+27),
+body.theme1 .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 4px solid var(--border-color); }
+body.theme1 .cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
+
+body.theme1 .cell.subgrid-border-right-yellow { border-right-color: var(--bg-color) !important; }
+body.theme1 .cell.subgrid-border-bottom-yellow { border-bottom-color: var(--bg-color) !important; }
+
+/* ==========================================
+   THÈME 2 : Cyan & Bleu Pointillés
+   ========================================== */
 body.theme2 {
     --bg-color: #80fbe5;
     --text-color: #2931f6;
@@ -53,13 +75,12 @@ body.theme2 {
     color: var(--text-color);
 }
 
-/* Logo agrandi pour le thème 2 */
-body.theme2 #logo-img {
-    height: 55px;
+body.theme2 #logo-img { 
+    width: 180px; 
 }
 
-body.theme2 .difficulty-selector button {
-    border-radius: 20px;
+body.theme2 .difficulty-selector button { 
+    border-radius: 20px; 
 }
 
 body.theme2 .info-panel #btn-reset,
@@ -68,18 +89,19 @@ body.theme2 .btn-notes {
     text-underline-offset: 4px;
 }
 
-body.theme2 .sudoku-board {
-    border: 4px dotted var(--border-color);
+body.theme2 .sudoku-board { 
+    border: 4px dotted var(--border-color); 
 }
 
 body.theme2 .cell {
     border-right: 1px dotted var(--border-color);
     border-bottom: 1px dotted var(--border-color);
 }
-
 body.theme2 .cell:nth-child(3n) { border-right: 4px dotted var(--border-color); }
+body.theme2 .cell:nth-child(9n) { border-right: none; }
 body.theme2 .cell:nth-child(n+19):nth-child(-n+27),
 body.theme2 .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 4px dotted var(--border-color); }
+body.theme2 .cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
 
 /* Chiffres pré-remplis cerclés et recentrés */
 body.theme2 .cell.readonly .main-value {
@@ -88,37 +110,36 @@ body.theme2 .cell.readonly .main-value {
     width: 26px;
     height: 26px;
     color: var(--text-color);
-    
-    /* Centrage parfait du cercle dans la case */
     inset: 0;
     margin: auto;
-    
-    /* Compensation de l'alignement vertical spécifique à la police Abordage */
-    padding-top: 3px; 
+    padding-top: 3px;
     line-height: 1;
 }
 
-/* Pavé numérique en cercles avec léger décalage optique pour la police */
 body.theme2 .numpad button {
     border-radius: 50%;
     padding-top: 2px;
 }
 
-/* --- STRUCTURE COMMUNE (Format Compact) --- */
+
+
+/* ==========================================
+   STRUCTURE COMMUNE
+   ========================================== */
 #logo-container {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     text-align: center;
 }
 
 #logo-img {
-    height: 38px;
     object-fit: contain;
 }
 
 .difficulty-selector {
     display: flex;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-top: 40px; /* Ajout du gap sous le pavé numérique */
+    margin-bottom: 8px;
     width: 100%;
     max-width: 320px;
 }
@@ -142,10 +163,10 @@ body.theme2 .numpad button {
 .info-panel {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     width: 100%;
     max-width: 320px;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
     font-size: 0.95rem;
     font-weight: bold;
 }
@@ -157,7 +178,6 @@ body.theme2 .numpad button {
 .sudoku-board {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    border: 4px solid var(--border-color);
     background-color: var(--bg-color);
     max-width: 320px;
     width: 100%;
@@ -168,23 +188,11 @@ body.theme2 .numpad button {
     background-color: transparent;
     position: relative;
     cursor: pointer;
-    border-right: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
 }
-
-.cell:nth-child(3n) { border-right: 4px solid var(--border-color); }
-.cell:nth-child(9n) { border-right: none; }
-.cell:nth-child(n+19):nth-child(-n+27),
-.cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 4px solid var(--border-color); }
-.cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
 
 .cell.selected {
     background-color: var(--border-color);
 }
-
-/* Raccord des bordures de sous-grille pour cases noires adjacentes (Thème 1) */
-body.theme1 .cell.subgrid-border-right-yellow { border-right-color: var(--bg-color) !important; }
-body.theme1 .cell.subgrid-border-bottom-yellow { border-bottom-color: var(--bg-color) !important; }
 
 .main-value {
     position: absolute;
@@ -233,9 +241,9 @@ body.theme1 .cell.subgrid-border-bottom-yellow { border-bottom-color: var(--bg-c
     border: none;
     color: var(--text-color);
     font-family: inherit;
-    font-size: 1.25rem;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    font-size: 1.15rem;
+    margin-top: 15px;
+    margin-bottom: 15px;
     cursor: pointer;
 }
 
@@ -273,11 +281,499 @@ body.theme1 .cell.subgrid-border-bottom-yellow { border-bottom-color: var(--bg-c
 
 #victory-message {
     display: none;
-    margin-top: 10px;
+    margin-top: 8px;
     padding: 8px;
     background-color: var(--border-color);
     color: var(--bg-color);
     font-size: 1rem;
     text-align: center;
     max-width: 320px;
+}
+
+/* ==========================================
+   THÈME 3 : Rose & Magenta Syne
+   ========================================== */
+
+body.theme3 {
+    --bg-color: #FEC9FC;
+    --text-color: #AD00A7;
+    --border-color: #AD00A7;
+    font-family: 'Syne', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+body.theme3 #logo-img { width: 180px; }
+
+/* Entête & Bouton Reset */
+body.theme3 .info-panel {
+    font-weight: 500;
+}
+body.theme3 .info-panel #btn-reset {
+    background-color: var(--border-color);
+    color: #FEC9FC;
+    padding: 2px 14px;
+    border-radius: 15px;
+    font-weight: 700;
+}
+
+/* Grille Sudoku - Layout avec Gouttières Virtuelles */
+body.theme3 .sudoku-board {
+    border: none;
+    background-color: transparent;
+    aspect-ratio: auto; /* Désactive le carré forcé global, géré par les cellules */
+    /* On crée 11 colonnes/lignes : 9 pour les cases (1fr) et 2 pour les gouttières de 6px */
+    grid-template-columns: repeat(3, 1fr) 1px repeat(3, 1fr) 1px repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr) 1px repeat(3, 1fr) 1px repeat(3, 1fr);
+    gap: 0;
+    max-width: 350px;
+}
+
+body.theme3 .cell {
+    border: none !important;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+}
+
+/* Placement exact des 81 cases en contournant les colonnes/lignes de 6px (gouttières) */
+body.theme3 .cell[data-col="0"] { grid-column: 1; }
+body.theme3 .cell[data-col="1"] { grid-column: 2; }
+body.theme3 .cell[data-col="2"] { grid-column: 3; }
+body.theme3 .cell[data-col="3"] { grid-column: 5; } /* Saute la gouttière 4 */
+body.theme3 .cell[data-col="4"] { grid-column: 6; }
+body.theme3 .cell[data-col="5"] { grid-column: 7; }
+body.theme3 .cell[data-col="6"] { grid-column: 9; } /* Saute la gouttière 8 */
+body.theme3 .cell[data-col="7"] { grid-column: 10; }
+body.theme3 .cell[data-col="8"] { grid-column: 11; }
+
+body.theme3 .cell[data-row="0"] { grid-row: 1; }
+body.theme3 .cell[data-row="1"] { grid-row: 2; }
+body.theme3 .cell[data-row="2"] { grid-row: 3; }
+body.theme3 .cell[data-row="3"] { grid-row: 5; }
+body.theme3 .cell[data-row="4"] { grid-row: 6; }
+body.theme3 .cell[data-row="5"] { grid-row: 7; }
+body.theme3 .cell[data-row="6"] { grid-row: 9; }
+body.theme3 .cell[data-row="7"] { grid-row: 10; }
+body.theme3 .cell[data-row="8"] { grid-row: 11; }
+
+/* Construction des cercles et des formes via ::before */
+body.theme3 .cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Base Typographique des cases */
+body.theme3 .main-value {
+    font-weight: 700;
+    z-index: 3;
+}
+
+/* Ajustement de la grille de notes pour rentrer parfaitement dans le cercle */
+body.theme3 .notes-grid {
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+}
+
+/* Réduction légère de la police pour éviter que les notes se touchent */
+body.theme3 .notes-grid span {
+    font-size: 0.5rem;
+}
+
+body.theme3 .notes-grid { z-index: 2; }
+body.theme3 .notes-grid span { color: var(--text-color); font-weight: 700; }
+
+/* === SOUS-GRILLES PLEINES MAGENTA (Haut-Gauche/Droit, Bas-Gauche/Droit, Centre) === */
+body.theme3 .cell:is(
+    [data-row="0"], [data-row="1"], [data-row="2"], [data-row="6"], [data-row="7"], [data-row="8"]
+):is(
+    [data-col="0"], [data-col="1"], [data-col="2"], [data-col="6"], [data-col="7"], [data-col="8"]
+),
+body.theme3 .cell:is(
+    [data-row="3"], [data-row="4"], [data-row="5"]
+):is(
+    [data-col="3"], [data-col="4"], [data-col="5"]
+) {
+    background-color: var(--border-color) !important;
+}
+
+/* Arrondis extérieurs (20px) pour former les blocs squircle */
+body.theme3 .cell:is([data-row="0"], [data-row="6"]):is([data-col="0"], [data-col="6"]), body.theme3 .cell[data-row="3"][data-col="3"] { border-top-left-radius: 20px; }
+body.theme3 .cell:is([data-row="0"], [data-row="6"]):is([data-col="2"], [data-col="8"]), body.theme3 .cell[data-row="3"][data-col="5"] { border-top-right-radius: 20px; }
+body.theme3 .cell:is([data-row="2"], [data-row="8"]):is([data-col="0"], [data-col="6"]), body.theme3 .cell[data-row="5"][data-col="3"] { border-bottom-left-radius: 20px; }
+body.theme3 .cell:is([data-row="2"], [data-row="8"]):is([data-col="2"], [data-col="8"]), body.theme3 .cell[data-row="5"][data-col="5"] { border-bottom-right-radius: 20px; }
+
+/* Cercles blancs dans les blocs Magenta (quand la case est vide ou en note) */
+body.theme3 .cell:is(
+    [data-row="0"], [data-row="1"], [data-row="2"], [data-row="6"], [data-row="7"], [data-row="8"]
+):is(
+    [data-col="0"], [data-col="1"], [data-col="2"], [data-col="6"], [data-col="7"], [data-col="8"]
+)::before,
+body.theme3 .cell:is(
+    [data-row="3"], [data-row="4"], [data-row="5"]
+):is(
+    [data-col="3"], [data-col="4"], [data-col="5"]
+)::before {
+    background-color: #FEC9FC;
+    border: none;
+}
+
+/* Chiffre pré-rempli dans bloc Magenta = Disparition du cercle, texte blanc sur fond magenta */
+body.theme3 .cell.readonly:is(
+    [data-row="0"], [data-row="1"], [data-row="2"], [data-row="6"], [data-row="7"], [data-row="8"]
+):is(
+    [data-col="0"], [data-col="1"], [data-col="2"], [data-col="6"], [data-col="7"], [data-col="8"]
+)::before,
+body.theme3 .cell.readonly:is(
+    [data-row="3"], [data-row="4"], [data-row="5"]
+):is(
+    [data-col="3"], [data-col="4"], [data-col="5"]
+)::before {
+    display: none;
+}
+
+/* === SOUS-GRILLES CLAIRES ROSES (Haut-Milieu, Milieu-Gauche/Droit, Bas-Milieu) === */
+/* Cercles de contour magenta dans les blocs transparents/roses */
+body.theme3 .cell:not(
+    :is([data-row="0"], [data-row="1"], [data-row="2"], [data-row="6"], [data-row="7"], [data-row="8"])
+    :is([data-col="0"], [data-col="1"], [data-col="2"], [data-col="6"], [data-col="7"], [data-col="8"])
+):not(
+    :is([data-row="3"], [data-row="4"], [data-row="5"])
+    :is([data-col="3"], [data-col="4"], [data-col="5"])
+)::before {
+    border: 2px solid var(--border-color);
+}
+
+/* Chiffre pré-rempli dans bloc clair = Cercle magenta plein, texte blanc */
+body.theme3 .cell.readonly:not(
+    :is([data-row="0"], [data-row="1"], [data-row="2"], [data-row="6"], [data-row="7"], [data-row="8"])
+    :is([data-col="0"], [data-col="1"], [data-col="2"], [data-col="6"], [data-col="7"], [data-col="8"])
+):not(
+    :is([data-row="3"], [data-row="4"], [data-row="5"])
+    :is([data-col="3"], [data-col="4"], [data-col="5"])
+)::before {
+    background-color: var(--border-color);
+    border: none;
+}
+
+/* Tous les chiffres pré-remplis en thème 3 sont blancs */
+body.theme3 .cell.readonly .main-value { color: #FEC9FC; }
+
+/* === ÉTATS ET INTERACTIONS === */
+/* Sélection */
+body.theme3 .cell.selected { background-color: transparent; } /* Annulation du style de base */
+
+/* Garder le texte en magenta lors de la sélection pour le thème 3 */
+body.theme3 .cell.selected .main-value,
+body.theme3 .cell.selected .notes-grid span {
+    color: var(--text-color);
+}
+
+body.theme3 .cell.selected::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background-color: var(--text-color);
+    opacity: 0.15;
+    z-index: 4;
+    pointer-events: none;
+}
+
+/* === BOUTONS ET PAVÉ NUMÉRIQUE === */
+
+/* Bouton Notes - État désactivé (par défaut) */
+body.theme3 .btn-notes {
+    background-color: var(--bg-color); /* Fond rose */
+    color: var(--text-color); /* Typo en magenta */
+    border-radius: 25px;
+    padding: 8px 30px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin: 20px 0;
+    border: none;
+}
+
+/* Bouton Notes - État activé */
+body.theme3 .btn-notes.active {
+    background-color: var(--border-color); /* Fond plein en magenta */
+    color: var(--bg-color); /* Typo en rose */
+}
+
+body.theme3 .numpad { gap: 5px; max-width: 320px; }
+
+/* Styles alternés pour le Numpad */
+body.theme3 .numpad button {
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+/* Impairs : 1, 3, 5, 7, 9 (Cercle contour) */
+body.theme3 .numpad button:nth-child(odd) {
+    border: 2px solid var(--border-color);
+    background-color: transparent;
+    color: var(--text-color);
+}
+/* Pairs : 2, 4, 6, 8, Retour (Cercle plein) */
+body.theme3 .numpad button:nth-child(even) {
+    border: none;
+    background-color: var(--border-color);
+    color: #FEC9FC;
+}
+body.theme3 .numpad .btn-erase { 
+    transform: none; 
+} /* On retire l'inclinaison pour ce thème */
+
+/* Sélecteur de difficulté (sans contours) */
+body.theme3 .difficulty-selector button {
+    border: none;
+    background-color: transparent;
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: 20px;
+}
+body.theme3 .difficulty-selector button.active {
+    background-color: var(--border-color);
+    color: #FEC9FC;
+}
+
+/* ==========================================
+   THÈME 4 : Vert & Gris
+   ========================================== */
+body.theme4 {
+    --bg-color: #383838;
+    --text-color: #C8FF00;
+    --border-color: #C8FF00;
+    font-family: 'Arial Black', Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+body.theme4 #logo-img { width: 180px; }
+
+/* Entête & Bouton Reset */
+body.theme4 .info-panel {
+    font-weight: normal; /* Arial Black est déjà très gras */
+}
+
+body.theme4 .info-panel #btn-reset {
+    background-color: var(--border-color);
+    color: var(--bg-color);
+    padding: 2px 8px;
+    border: none;
+    border-radius: 0;
+}
+
+/* Grille Sudoku - Pointillés fins */
+body.theme4 .sudoku-board {
+    /* On remplace la bordure dashed par une bordure transparente */
+    border: 6px solid transparent; 
+    background-color: var(--bg-color);
+    
+    /* On applique un SVG avec stroke-dasharray='15, 10' (tiret de 15px, espace de 10px) */
+    /* Le %23 remplace le # pour le code couleur hexadécimal %23C8FF00 */
+    border-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' stroke='%23C8FF00' stroke-width='12' stroke-dasharray='1, 2' stroke-linecap='butt'/%3E%3C/svg%3E") 6;
+}
+
+body.theme4 .cell {
+    border-right: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    background-color: transparent;
+}
+
+/* Bordures des sous-grilles 3x3 */
+body.theme4 .cell:nth-child(3n) {
+    /* On remplace la bordure dashed par une bordure transparente */
+    border-right: 6px solid transparent; 
+    background-color: var(--bg-color);
+    
+    /* On applique un SVG avec stroke-dasharray='15, 10' (tiret de 15px, espace de 10px) */
+    /* Le %23 remplace le # pour le code couleur hexadécimal %23C8FF00 */
+    border-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' stroke='%23C8FF00' stroke-width='12' stroke-dasharray='1, 2' stroke-linecap='butt'/%3E%3C/svg%3E") 6;
+}
+body.theme4 .cell:nth-child(9n) { border-right: none; }
+body.theme4 .cell:nth-child(n+19):nth-child(-n+27),
+body.theme4 .cell:nth-child(n+46):nth-child(-n+54) { 
+    /* On remplace la bordure dashed par une bordure transparente */
+    border-bottom: 6px solid transparent; 
+    background-color: var(--bg-color);
+    
+    /* On applique un SVG avec stroke-dasharray='15, 10' (tiret de 15px, espace de 10px) */
+    /* Le %23 remplace le # pour le code couleur hexadécimal %23C8FF00 */
+    border-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' stroke='%23C8FF00' stroke-width='12' stroke-dasharray='1, 2' stroke-linecap='butt'/%3E%3C/svg%3E") 6;
+}
+body.theme4 .cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
+
+/* === TYPOGRAPHIE DES CASES === */
+/* 1. Chiffres pré-remplis (Arial Black) */
+body.theme4 .cell.readonly .main-value {
+    font-family: 'Arial Black', Arial, sans-serif;
+    color: var(--text-color);
+}
+
+/* 2. Chiffres placés par le joueur et Notes (Arial Bold Italic) */
+body.theme4 .cell:not(.readonly) .main-value,
+body.theme4 .notes-grid span {
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+}
+
+/* Ajustement pour que les notes ne soient pas trop petites dans ce thème carré */
+body.theme4 .notes-grid {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+body.theme4 .notes-grid span { font-size: 0.65rem; }
+
+/* Interactions & Sélection */
+body.theme4 .cell.selected {
+    background-color: var(--border-color);
+}
+body.theme4 .cell.selected .main-value,
+body.theme4 .cell.selected .notes-grid span {
+    color: var(--bg-color);
+}
+
+/* Bouton Notes (fonctionnement identique au thème 3) */
+body.theme4 .btn-notes {
+    background-color: transparent;
+    color: var(--text-color);
+    padding: 5px 20px;
+    font-size: 1.5rem;
+    border-radius: 0;
+    transition: background-color 0.2s, color 0.2s;
+}
+body.theme4 .btn-notes.active {
+    background-color: var(--border-color);
+    color: var(--bg-color);
+}
+
+/* Pavé Numérique */
+body.theme4 .numpad {
+    gap: 12px;
+}
+body.theme4 .numpad button {
+    background-color: var(--border-color);
+    color: var(--bg-color);
+    
+    /* Typo Arial Bold Italic pour les chiffres */
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 2rem;
+}
+body.theme4 .numpad button:active {
+
+    border: 3px solid var(--border-color);
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--text-color);
+}
+
+/* Bouton effacer du pavé numérique (Fond plein, icône droite) */
+body.theme4 .numpad .btn-erase {
+    background-color: var(--border-color);
+    color: var(--bg-color);
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-style: normal; /* Annule l'italique */
+    transform: none; /* Annule l'inclinaison par défaut de la structure commune */
+}
+
+/* Sélecteur de difficulté */
+body.theme4 .difficulty-selector button {
+    border: none;
+    background-color: transparent;
+    color: var(--text-color);
+    text-transform: uppercase;
+    font-size: 1.15rem;
+    border-radius: 0;
+}
+body.theme4 .difficulty-selector button.active {
+    background-color: var(--border-color);
+    color: var(--bg-color);
+}
+
+/* ==========================================
+   EAGLE EGG : FORMAT D'IMPRESSION PDF A4
+   ========================================== */
+.pdf-page {
+    width: 210mm;
+    height: 297mm;
+    padding: 10mm;
+    background-color: #ffffff !important;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8mm;
+    box-sizing: border-box;
+    position: absolute;
+    left: -9999px; /* Hors écran pendant la génération */
+    top: 0;
+}
+
+/* Override pour forcer le fond blanc et préserver le texte lisible sur PDF */
+.pdf-page, 
+.pdf-page * {
+    background-color: transparent;
+}
+
+.pdf-grid-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #eee;
+    padding: 3mm;
+    box-sizing: border-box;
+}
+
+.pdf-header {
+    text-align: center;
+    width: 100%;
+}
+
+.pdf-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.pdf-badge-difficulty {
+    display: inline-block;
+    font-size: 0.65rem;
+    padding: 1px 8px;
+    border: 1.5px solid var(--border-color);
+    margin-top: 2px;
+    font-weight: bold;
+}
+
+.pdf-date {
+    font-size: 0.75rem;
+    font-weight: bold;
+    width: 100%;
+    margin: 2mm 0 1mm 0;
+    text-align: left;
+}
+
+.pdf-page .sudoku-board {
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 1 / 1;
 }
