@@ -355,6 +355,7 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyHeight = document.body.style.height;
     const originalBodyDisplay = document.body.style.display;
+    const originalBodyPadding = document.body.style.padding; // Nouvelle ligne
 
     // 2. Masquage temporaire de l'interface
     const childrenToHide = Array.from(document.body.children);
@@ -364,6 +365,7 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     document.body.style.overflow = 'visible';
     document.body.style.height = 'auto';
     document.body.style.display = 'block';
+    document.body.style.padding = '0'; // Nouvelle ligne
 
     const pdfPage = document.createElement('div');
     pdfPage.className = `pdf-page ${currentThemeClass}`;
@@ -451,7 +453,7 @@ const options = {
         scale: 4, // Monte la résolution à x4
         logging: false,
         useCORS: true,
-        windowWidth: 1600 // Force un rendu virtuel haute résolution indépendant de l'écran
+        //windowWidth: 1600 // Force un rendu virtuel haute résolution indépendant de l'écran
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false }
 };
@@ -469,6 +471,7 @@ const options = {
         document.body.style.overflow = originalBodyOverflow;
         document.body.style.height = originalBodyHeight;
         document.body.style.display = originalBodyDisplay;
+        document.body.style.padding = originalBodyPadding; // Nouvelle ligne
 
         seed = savedSeed;
     }

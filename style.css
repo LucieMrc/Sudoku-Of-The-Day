@@ -672,28 +672,32 @@ body.theme4 .difficulty-selector button.active {
    EASTER EGG : FORMAT D'IMPRESSION PDF A4
    ========================================== */
 .pdf-page {
-    width: 210mm;
-    height: 295mm !important;
-    max-height: 295mm !important;
-    padding: 10mm;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    width: 210mm !important;
+    height: 296mm !important;
+    display: grid !important;
+    gap: 5mm !important;
+    max-height: 297mm !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 5mm;
-    box-sizing: border-box;
-    margin: 0 auto;
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(3, 1fr) !important;
     overflow: hidden !important;
 }
 
 .pdf-grid-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
     padding: 3mm;
-    box-sizing: border-box;
     background-color: #ffffff !important;
     position: relative;
 
