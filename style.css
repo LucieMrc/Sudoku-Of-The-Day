@@ -710,27 +710,26 @@ body.theme4 .difficulty-selector button.active {
 }
 
 /* ==========================================
-   EAGLE EGG : FORMAT D'IMPRESSION PDF A4
+   EASTER EGG : FORMAT D'IMPRESSION PDF A4 (NOIR & BLANC)
    ========================================== */
 .pdf-page {
     width: 210mm;
     height: 297mm;
     padding: 10mm;
     background-color: #ffffff !important;
+    color: #000000 !important;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 8mm;
+    gap: 6mm;
     box-sizing: border-box;
-    position: absolute;
-    left: -9999px; /* Hors écran pendant la génération */
+    font-family: Arial, sans-serif !important;
+    
+    /* Positionné temporairement par-dessus l'écran pour la capture par html2canvas */
+    position: fixed;
     top: 0;
-}
-
-/* Override pour forcer le fond blanc et préserver le texte lisible sur PDF */
-.pdf-page, 
-.pdf-page * {
-    background-color: transparent;
+    left: 0;
+    z-index: 99999;
 }
 
 .pdf-grid-card {
@@ -738,42 +737,92 @@ body.theme4 .difficulty-selector button.active {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    border: 1px solid #eee;
-    padding: 3mm;
+    border: 1px solid #000000;
+    padding: 2.5mm;
     box-sizing: border-box;
+    background-color: #ffffff !important;
 }
 
 .pdf-header {
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
+    color: #000000;
+    margin-bottom: 1mm;
 }
 
 .pdf-title {
-    font-size: 1.1rem;
+    font-size: 0.85rem;
     font-weight: 900;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
+    color: #000000;
 }
 
 .pdf-badge-difficulty {
     display: inline-block;
-    font-size: 0.65rem;
-    padding: 1px 8px;
-    border: 1.5px solid var(--border-color);
-    margin-top: 2px;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border: 1px solid #000000;
     font-weight: bold;
+    text-transform: uppercase;
+    color: #000000;
+    background-color: #ffffff;
 }
 
 .pdf-date {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: bold;
     width: 100%;
-    margin: 2mm 0 1mm 0;
+    margin-bottom: 1.5mm;
     text-align: left;
+    color: #000000;
 }
 
 .pdf-page .sudoku-board {
+    display: grid !important;
+    grid-template-columns: repeat(9, 1fr) !important;
+    grid-template-rows: repeat(9, 1fr) !important;
     width: 100% !important;
     max-width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    border: 2px solid #000000 !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+}
+
+.pdf-page .cell {
     aspect-ratio: 1 / 1;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-right: 1px solid #aaaaaa !important;
+    border-bottom: 1px solid #aaaaaa !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Bordures des sous-grilles 3x3 */
+.pdf-page .cell:nth-child(3n) {
+    border-right: 2px solid #000000 !important;
+}
+.pdf-page .cell:nth-child(9n) {
+    border-right: none !important;
+}
+.pdf-page .cell:nth-child(n+19):nth-child(-n+27),
+.pdf-page .cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 2px solid #000000 !important;
+}
+.pdf-page .cell:nth-child(n+73):nth-child(-n+81) {
+    border-bottom: none !important;
+}
+
+.pdf-page .main-value {
+    position: static !important;
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    font-family: Arial, sans-serif !important;
 }

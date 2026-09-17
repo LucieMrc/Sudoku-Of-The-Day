@@ -215,11 +215,7 @@ function updateSubgridBorders() {
 function toggleNotes() {
     modeNotesActive = !modeNotesActive;
     const btn = document.getElementById("btn-notes");
-    
-    // Mise à jour du texte
     btn.innerText = modeNotesActive ? "mode notes activé" : "mode notes désactivé";
-    
-    // Ajout ou suppression de la classe "active" selon l'état du mode notes
     btn.classList.toggle("active", modeNotesActive);
 }
 
@@ -328,36 +324,40 @@ function checkWin() {
     msg.style.display = "block";
 }
 
-// --- DÉMARRAGE ---
+// --- DÉMARRAGE DU JEU ---
 initialiserPartie();
 chargerJeu('moyen');
 
-// Déclencheur Easter Egg sur double-clic logo
+// --- EASTER EGG : IMPRESSION 9 GRILLES EN PDF ---
 document.getElementById('logo-img').addEventListener('dblclick', async () => {
-    // 1. Demande de la date de départ
     const todayStr = new Date().toISOString().split('T')[0];
     const inputDate = prompt("Easter Egg activé !\nEntrez la date de début (AAAA-MM-JJ) :", todayStr);
     
     if (!inputDate) return;
 
-    const startDate = new Date(inputDate);
+    // Découpage manuel de la date pour éviter les décalages de fuseau horaire UTC
+    const parts = inputDate.split('-');
+    if (parts.length !== 3) {
+        alert("Format de date invalide.");
+        return;
+    }
+    const startDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+
     if (isNaN(startDate.getTime())) {
         alert("Format de date invalide.");
         return;
     }
 
-    // 2. Récupération de la difficulté active dans l'interface
     const activeDiffBtn = document.querySelector('.difficulty-selector button.active');
-    const difficulty = activeDiffBtn ? activeDiffBtn.textContent.trim() : 'facile';
+    const difficulty = activeDiffBtn ? activeDiffBtn.textContent.trim().toLowerCase() : currentDifficulty;
 
-    // 3. Création du conteneur PDF A4 temporaire
     const pdfPage = document.createElement('div');
-    // Conserve le nom du thème actif ('theme1', 'theme2', etc.) sur la page d'impression
-    pdfPage.className = `pdf-page ${document.body.className}`; 
+    // NOUVELLE LIGNE : Style uniforme neutre en Noir & Blanc
+    pdfPage.className = 'pdf-page';
+    // Sauvegarde de la seed de la partie en ligne
+    const savedSeed = seed;
 
-    // 4. Génération des 9 grilles
     for (let i = 0; i < 9; i++) {
-        // Incrémentation de la date (+1 jour par grille)
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         
@@ -367,10 +367,14 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
             year: 'numeric'
         });
 
-        // Remplace 'generateNewPuzzle' par la fonction de ton projet qui renvoie un tableau de 81 valeurs
-        const puzzleData = generateNewPuzzle(difficulty); 
+        // Recalcul de la seed officielle pour chaque jour
+        seed = currentDate.getFullYear() * 10000 + (currentDate.getMonth() + 1) * 100 + currentDate.getDate();
+        if (difficulty === 'facile') seed += 1;
+        else if (difficulty === 'difficile') seed += 2;
 
-        // Structure HTML d'une carte de grille
+        const full = generateFullBoard();
+        const puzzleData = createPuzzle(full, difficulty).flat();
+
         const gridCard = document.createElement('div');
         gridCard.className = 'pdf-grid-card';
         gridCard.innerHTML = `
@@ -384,7 +388,6 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
 
         const boardContainer = gridCard.querySelector('.sudoku-board');
 
-        // Remplissage des 81 cases de la grille
         puzzleData.forEach((val, idx) => {
             const cell = document.createElement('div');
             const row = Math.floor(idx / 9);
@@ -405,21 +408,30 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         pdfPage.appendChild(gridCard);
     }
 
+    // Restauration de la seed du joueur
+    seed = savedSeed;
+
     document.body.appendChild(pdfPage);
 
-    // 5. Configuration et exportation PDF
-    const options = {
+const options = {
         margin: 0,
         filename: `sudoku-9-grilles-${inputDate}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, logging: false },
+        html2canvas: { 
+            scale: 2, 
+            logging: false,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
         await html2pdf().set(options).from(pdfPage).save();
+    } catch (err) {
+        console.error("Erreur lors de la génération du PDF :", err);
     } finally {
-        // Nettoyage de l'élément temporaire du DOM
         document.body.removeChild(pdfPage);
     }
 });
