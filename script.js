@@ -328,7 +328,8 @@ function checkWin() {
 initialiserPartie();
 chargerJeu('moyen');
 
-// --- EASTER EGG : IMPRESSION 9 GRILLES EN PDF ---
+
+// --- EASTER EGG : IMPRESSION 8 GRILLES EN PDF A3 ---
 document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const todayStr = new Date().toISOString().split('T')[0];
     const inputDate = prompt("Easter Egg activé !\nEntrez la date de début (AAAA-MM-JJ) :", todayStr);
@@ -355,24 +356,28 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const originalBodyOverflow = document.body.style.overflow;
     const originalBodyHeight = document.body.style.height;
     const originalBodyDisplay = document.body.style.display;
-    const originalBodyPadding = document.body.style.padding; // Nouvelle ligne
+    const originalBodyPadding = document.body.style.padding;
+    const originalBodyMargin = document.body.style.margin;
 
     // 2. Masquage temporaire de l'interface
     const childrenToHide = Array.from(document.body.children);
     childrenToHide.forEach(el => el.style.display = 'none');
 
     // 3. Préparation du document pour html2canvas
+    window.scrollTo(0, 0);
     document.body.style.overflow = 'visible';
     document.body.style.height = 'auto';
     document.body.style.display = 'block';
-    document.body.style.padding = '0'; // Nouvelle ligne
+    document.body.style.padding = '0';
+    document.body.style.margin = '0';
 
     const pdfPage = document.createElement('div');
     pdfPage.className = `pdf-page ${currentThemeClass}`;
 
     const savedSeed = seed;
 
-    for (let i = 0; i < 9; i++) {
+    // Génération de 8 grilles au lieu de 9
+    for (let i = 0; i < 8; i++) {
         const currentDate = new Date(startDate);
         currentDate.setDate(startDate.getDate() + i);
         
@@ -391,7 +396,7 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
 
         const gridCard = document.createElement('div');
         gridCard.className = 'pdf-grid-card';
-       gridCard.innerHTML = `
+        gridCard.innerHTML = `
         <div class="pdf-header">
             <img src="${currentThemeClass}/logo_nb.png" class="pdf-logo" alt="Logo">
             <div class="pdf-info-row">
@@ -421,7 +426,6 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
             boardContainer.appendChild(cell);
         });
 
-        // Gestion spécifique des séparateurs de sous-grilles foncées contiguës pour le Thème 1
         if (currentThemeClass === 'theme1') {
             const cells = boardContainer.children;
             for (let r = 0; r < 9; r++) {
@@ -442,28 +446,28 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
 
     document.body.appendChild(pdfPage);
 
-    // Pause pour garantir la fin du rendu des images/polices
     await new Promise(resolve => setTimeout(resolve, 150));
 
-const options = {
-    margin: 0,
-    filename: `sudoku-9-grilles-${inputDate}.pdf`,
-    image: { type: 'png' },
-    html2canvas: { 
-        scale: 4, // Monte la résolution à x4
-        logging: false,
-        useCORS: true,
-        //windowWidth: 1600 // Force un rendu virtuel haute résolution indépendant de l'écran
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false }
-};
+    const options = {
+        margin: 0,
+        filename: `sudoku-8-grilles-${inputDate}.pdf`,
+        image: { type: 'png' },
+        html2canvas: { 
+            scale: 2.5, // 2.5 évite la saturation mémoire sur du format A3
+            logging: false,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape', compress: false },
+        pagebreak: { mode: 'avoid-all' }
+    };
 
     try {
         await html2pdf().set(options).from(pdfPage).save();
     } catch (err) {
         console.error("Erreur lors de la génération du PDF :", err);
     } finally {
-        // Restauration de l'état initial du site
         if (document.body.contains(pdfPage)) {
             document.body.removeChild(pdfPage);
         }
@@ -471,7 +475,8 @@ const options = {
         document.body.style.overflow = originalBodyOverflow;
         document.body.style.height = originalBodyHeight;
         document.body.style.display = originalBodyDisplay;
-        document.body.style.padding = originalBodyPadding; // Nouvelle ligne
+        document.body.style.padding = originalBodyPadding;
+        document.body.style.margin = originalBodyMargin;
 
         seed = savedSeed;
     }

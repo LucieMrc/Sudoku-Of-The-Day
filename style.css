@@ -669,21 +669,21 @@ body.theme4 .difficulty-selector button.active {
 }
 
 /* ==========================================
-   EASTER EGG : FORMAT D'IMPRESSION PDF A4
+   EASTER EGG : FORMAT D'IMPRESSION PDF A3
    ========================================== */
 .pdf-page {
     box-sizing: border-box !important;
     margin: 0 !important;
     padding: 10mm !important;
-    width: 210mm !important;
-    height: 296mm !important;
+    width: 420mm !important; /* Largeur A3 */
+    height: 296mm !important; /* Hauteur A3 (296mm pour éviter le saut de page) */
     display: grid !important;
     gap: 5mm !important;
     max-height: 297mm !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    grid-template-rows: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important; /* 4 colonnes */
+    grid-template-rows: repeat(2, 1fr) !important;    /* 2 lignes */
     overflow: hidden !important;
 }
 
