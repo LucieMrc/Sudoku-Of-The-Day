@@ -453,7 +453,7 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         filename: `sudoku-8-grilles-${inputDate}.pdf`,
         image: { type: 'png' },
         html2canvas: { 
-            scale: 2.5, // 2.5 évite la saturation mémoire sur du format A3
+            scale: 3.5, // 2.5 évite la saturation mémoire sur du format A3
             logging: false,
             useCORS: true,
             scrollX: 0,
