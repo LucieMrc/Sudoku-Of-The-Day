@@ -2,7 +2,6 @@ const THEMES = ['theme1', 'theme2', 'theme3', 'theme4'];
 
 let startTime;
 let timerInterval;
-let seed;
 let fullBoard;
 let puzzleBoard;
 let currentDifficulty = 'moyen';
@@ -22,7 +21,7 @@ function choisirThemeAleatoire() {
     }
 }
 
-// --- INITIALISATION DATE ET SEED ---
+// --- INITIALISATION DATE ---
 function initialiserPartie() {
     choisirThemeAleatoire();
     
@@ -30,8 +29,6 @@ function initialiserPartie() {
     let options = { day: 'numeric', month: 'long', year: 'numeric' };
     let dateStr = d.toLocaleDateString('fr-FR', options).toLowerCase();
     document.getElementById("date-text").innerText = dateStr;
-    
-    seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
 
 function startTimer() {
@@ -46,68 +43,464 @@ function startTimer() {
 }
 
 // --- GÉNÉRATION DU SUDOKU ---
-function lcg() {
-    seed = (seed * 1664525 + 1013904223) % 4294967296;
-    return seed / 4294967296;
+// Principe :
+//   1. un générateur aléatoire déterministe, initialisé à partir de la date ET de la
+//      difficulté (même grille pour tout le monde, sur tous les navigateurs) ;
+//   2. une grille complète tirée au hasard ;
+//   3. on retire les cases une par une. Un retrait n'est validé que si :
+//        - la grille garde UNE SEULE solution (solveur par retour arrière) ;
+//        - elle reste résoluble par le "solveur humain" (voir plus bas) sans dépasser
+//          le niveau de technique autorisé pour la difficulté ;
+//   4. la grille finale n'est acceptée que si elle EXIGE le niveau visé : un "moyen"
+//      qui se résout uniquement avec des candidats uniques est rejeté, et on recommence.
+
+// niveau  : niveau de technique que la grille doit exiger (1, 2 ou 3, voir TECHNIQUES)
+// retirer : [min, max] de cases retirées
+const DIFFICULTES = {
+    facile:    { niveau: 1, retirer: [36, 40] },
+    moyen:     { niveau: 2, retirer: [44, 52] },
+    difficile: { niveau: 3, retirer: [48, 58] }
+};
+// Nombre maximum de grilles complètes essayées avant de se rabattre sur la meilleure trouvée
+const ESSAIS_MAX = 150;
+
+// Transforme un texte en entier 32 bits (hash xmur3)
+function hashTexte(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+    }
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^ (h >>> 16)) >>> 0;
 }
 
-function randInt(min, max) {
-    return Math.floor(lcg() * (max - min + 1)) + min;
+// Générateur pseudo-aléatoire mulberry32 : renvoie une fonction qui donne un nombre dans [0, 1[
+function creerAleatoire(graine) {
+    let a = graine >>> 0;
+    return function () {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
 }
 
-function generateFullBoard() {
-    let board = Array.from({length: 9}, () => Array(9).fill(0));
-    
-    function fillBoard() {
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                if (board[r][c] === 0) {
-                    let nums = [1,2,3,4,5,6,7,8,9];
-                    nums.sort(() => lcg() - 0.5);
-                    for (let n of nums) {
-                        if (isValid(board, r, c, n)) {
-                            board[r][c] = n;
-                            if (fillBoard()) return true;
-                            board[r][c] = 0;
-                        }
-                    }
-                    return false;
-                }
+function entierAleatoire(rng, min, max) {
+    return Math.floor(rng() * (max - min + 1)) + min;
+}
+
+// Mélange de Fisher-Yates : non biaisé et identique sur tous les navigateurs
+// (contrairement à sort(() => hasard - 0.5), dont le résultat dépend du moteur JS)
+function melanger(tableau, rng) {
+    for (let i = tableau.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [tableau[i], tableau[j]] = [tableau[j], tableau[i]];
+    }
+    return tableau;
+}
+
+function nombreDeBits(masque) {
+    let n = 0;
+    while (masque) { masque &= masque - 1; n++; }
+    return n;
+}
+
+// Solveur par retour arrière. "grille" est un tableau plat de 81 cases (0 = vide).
+//  - sans rng : compte les solutions et s'arrête dès que "limite" est atteinte ;
+//  - avec rng : essaie les chiffres dans un ordre aléatoire (sert à créer la grille complète).
+// Renvoie { nombre, solution } (solution = première solution trouvée).
+function resoudre(grille, limite, rng) {
+    const g = grille.slice();
+    const lignes = new Array(9).fill(0);
+    const colonnes = new Array(9).fill(0);
+    const blocs = new Array(9).fill(0);
+
+    for (let i = 0; i < 81; i++) {
+        if (g[i] !== 0) {
+            const bit = 1 << (g[i] - 1);
+            const r = Math.floor(i / 9), c = i % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+            // Grille de départ incohérente (doublon) : aucune solution
+            if ((lignes[r] | colonnes[c] | blocs[b]) & bit) return { nombre: 0, solution: null };
+            lignes[r] |= bit; colonnes[c] |= bit; blocs[b] |= bit;
+        }
+    }
+
+    let nombre = 0;
+    let solution = null;
+
+    function explorer() {
+        // On choisit la case vide qui a le moins de candidats : c'est ce qui rend le solveur rapide
+        let meilleure = -1, meilleurMasque = 0, meilleurNb = 10;
+        for (let i = 0; i < 81; i++) {
+            if (g[i] !== 0) continue;
+            const r = Math.floor(i / 9), c = i % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+            const masque = ~(lignes[r] | colonnes[c] | blocs[b]) & 0x1FF;
+            if (masque === 0) return; // case impossible à remplir : impasse
+            const nb = nombreDeBits(masque);
+            if (nb < meilleurNb) {
+                meilleure = i; meilleurMasque = masque; meilleurNb = nb;
+                if (nb === 1) break;
             }
         }
-        return true;
-    }
-    fillBoard();
-    return board;
-}
 
-function isValid(board, r, c, num) {
-    for (let i = 0; i < 9; i++) {
-        if (board[r][i] === num || board[i][c] === num) return false;
-    }
-    let br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            if (board[br + i][bc + j] === num) return false;
+        if (meilleure === -1) { // plus aucune case vide : une solution de plus
+            nombre++;
+            if (!solution) solution = g.slice();
+            return;
+        }
+
+        const r = Math.floor(meilleure / 9), c = meilleure % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+        const candidats = [];
+        for (let n = 1; n <= 9; n++) if (meilleurMasque & (1 << (n - 1))) candidats.push(n);
+        if (rng) melanger(candidats, rng);
+
+        for (const n of candidats) {
+            const bit = 1 << (n - 1);
+            g[meilleure] = n;
+            lignes[r] |= bit; colonnes[c] |= bit; blocs[b] |= bit;
+            explorer();
+            g[meilleure] = 0;
+            lignes[r] &= ~bit; colonnes[c] &= ~bit; blocs[b] &= ~bit;
+            if (nombre >= limite) return;
         }
     }
+
+    explorer();
+    return { nombre, solution };
+}
+
+function aUneSolutionUnique(grille) {
+    return resoudre(grille, 2).nombre === 1;
+}
+
+function genererGrilleComplete(rng) {
+    return resoudre(new Array(81).fill(0), 1, rng).solution;
+}
+
+// --- SOLVEUR HUMAIN ---
+// Résout une grille uniquement par déduction, comme le ferait un joueur, en travaillant sur
+// les candidats de chaque case (un masque de 9 bits : bit n-1 allumé = le chiffre n est possible).
+// Il essaie toujours la technique la plus simple d'abord ; le "niveau" d'une grille est donc
+// celui de la technique la plus difficile dont on ne peut pas se passer.
+
+// Les 27 unités (9 lignes, 9 colonnes, 9 blocs) et, pour chaque case, ses 20 voisines
+const UNITES = [];
+for (let r = 0; r < 9; r++) UNITES.push(Array.from({ length: 9 }, (_, c) => r * 9 + c));
+for (let c = 0; c < 9; c++) UNITES.push(Array.from({ length: 9 }, (_, r) => r * 9 + c));
+for (let b = 0; b < 9; b++) {
+    const r0 = Math.floor(b / 3) * 3, c0 = (b % 3) * 3;
+    UNITES.push(Array.from({ length: 9 }, (_, k) => (r0 + Math.floor(k / 3)) * 9 + c0 + (k % 3)));
+}
+const LIGNES_ET_COLONNES = UNITES.slice(0, 18);
+const BLOCS = UNITES.slice(18);
+
+// Toutes les intersections bloc/ligne et bloc/colonne, dans les deux sens (pour les candidats verrouillés) :
+// source = cases de la première unité (avec un drapeau "commun"), reste = cases de la seconde hors intersection
+const INTERSECTIONS = [];
+for (const bloc of BLOCS) for (const ligne of LIGNES_ET_COLONNES) {
+    if (!bloc.some(i => ligne.includes(i))) continue;
+    for (const [a, b] of [[bloc, ligne], [ligne, bloc]]) {
+        INTERSECTIONS.push({
+            source: a.map(i => ({ i, commun: b.includes(i) })),
+            reste: b.filter(j => !a.includes(j))
+        });
+    }
+}
+
+const SONT_VOISINES = Array.from({ length: 81 }, () => new Uint8Array(81));
+for (const unite of UNITES) for (const i of unite) for (const j of unite) if (i !== j) SONT_VOISINES[i][j] = 1;
+const VOISINES = SONT_VOISINES.map(ligne => Array.from(ligne.keys()).filter(j => ligne[j]));
+
+function creerEtat(grille) {
+    const etat = { val: new Array(81).fill(0), cand: new Array(81).fill(0x1FF), vides: 81 };
+    for (let i = 0; i < 81; i++) if (grille[i] !== 0) poser(etat, i, grille[i]);
+    return etat;
+}
+
+function poser(etat, i, n) {
+    const bit = 1 << (n - 1);
+    etat.val[i] = n;
+    etat.cand[i] = 0;
+    etat.vides--;
+    for (const j of VOISINES[i]) etat.cand[j] &= ~bit;
+}
+
+// Retire des candidats d'une case ; renvoie true si quelque chose a changé
+function eliminer(etat, i, masque) {
+    if ((etat.cand[i] & masque) === 0) return false;
+    etat.cand[i] &= ~masque;
     return true;
 }
 
-function createPuzzle(full, difficulty) {
-    let puzzle = full.map(row => [...row]);
-    let cellsToRemove = difficulty === 'facile' ? randInt(30, 40) : difficulty === 'moyen' ? randInt(41, 50) : randInt(51, 60);
-    
-    let positions = [];
-    for(let i=0; i<81; i++) positions.push(i);
-    positions.sort(() => lcg() - 0.5);
-
-    for (let i = 0; i < cellsToRemove; i++) {
-        let r = Math.floor(positions[i] / 9);
-        let c = positions[i] % 9;
-        puzzle[r][c] = 0;
+// Appelle fn(combinaison) pour chaque choix de k éléments ; s'arrête si fn renvoie true
+function pourChaqueCombinaison(elements, k, fn) {
+    const choix = [];
+    function rec(debut) {
+        if (choix.length === k) return fn(choix);
+        for (let i = debut; i <= elements.length - (k - choix.length); i++) {
+            choix.push(elements[i]);
+            if (rec(i + 1)) return true;
+            choix.pop();
+        }
+        return false;
     }
-    return puzzle;
+    return rec(0);
+}
+
+// NIVEAU 1 -- Candidat unique caché : dans une unité, un chiffre n'a plus qu'une case possible
+function candidatUniqueCache(etat) {
+    let progres = false;
+    for (const unite of UNITES) {
+        for (let n = 1; n <= 9; n++) {
+            const bit = 1 << (n - 1);
+            let nb = 0, ou = -1;
+            for (const i of unite) if (etat.cand[i] & bit) { nb++; ou = i; }
+            if (nb === 1) { poser(etat, ou, n); progres = true; }
+        }
+    }
+    return progres;
+}
+
+// NIVEAU 1 -- Candidat unique nu : une case n'a plus qu'un seul chiffre possible
+function candidatUniqueNu(etat) {
+    let progres = false;
+    for (let i = 0; i < 81; i++) {
+        const m = etat.cand[i];
+        if (etat.val[i] === 0 && m !== 0 && (m & (m - 1)) === 0) {
+            poser(etat, i, 32 - Math.clz32(m));
+            progres = true;
+        }
+    }
+    return progres;
+}
+
+// NIVEAU 2 -- Candidats verrouillés (paires/triplets pointants et réduction ligne-bloc) :
+// si, dans une unité, un chiffre n'est possible que dans des cases qui appartiennent toutes
+// à une même autre unité, on peut le retirer du reste de cette autre unité.
+function candidatsVerrouilles(etat) {
+    let progres = false;
+    for (const { source, reste } of INTERSECTIONS) {
+        for (let n = 1; n <= 9; n++) {
+            const bit = 1 << (n - 1);
+            let dansCommun = 0, horsCommun = 0;
+            for (const { i, commun } of source) {
+                if (etat.cand[i] & bit) { if (commun) dansCommun++; else horsCommun++; }
+            }
+            if (dansCommun < 2 || horsCommun > 0) continue;
+            for (const j of reste) if (eliminer(etat, j, bit)) progres = true;
+        }
+    }
+    return progres;
+}
+
+// Sous-ensemble nu de taille k (paire, triplet, quadruplet nus) : k cases d'une unité se
+// partagent exactement k candidats -> ces chiffres sont exclus des autres cases de l'unité.
+function sousEnsembleNu(etat, k) {
+    let progres = false;
+    for (const unite of UNITES) {
+        const cases = unite.filter(i => etat.val[i] === 0 && nombreDeBits(etat.cand[i]) <= k);
+        if (cases.length < k) continue;
+        pourChaqueCombinaison(cases, k, choix => {
+            let union = 0;
+            for (const i of choix) union |= etat.cand[i];
+            if (nombreDeBits(union) !== k) return false;
+            for (const j of unite) if (!choix.includes(j) && eliminer(etat, j, union)) progres = true;
+            return false;
+        });
+    }
+    return progres;
+}
+
+// Sous-ensemble caché de taille k : k chiffres d'une unité ne sont possibles que dans les
+// mêmes k cases -> on retire tous les autres candidats de ces cases.
+function sousEnsembleCache(etat, k) {
+    let progres = false;
+    for (const unite of UNITES) {
+        const positions = {}; // chiffre -> masque des positions possibles dans l'unité
+        const chiffres = [];
+        for (let n = 1; n <= 9; n++) {
+            const bit = 1 << (n - 1);
+            let m = 0;
+            unite.forEach((i, p) => { if (etat.cand[i] & bit) m |= 1 << p; });
+            if (m !== 0 && nombreDeBits(m) <= k) { positions[n] = m; chiffres.push(n); }
+        }
+        if (chiffres.length < k) continue;
+        pourChaqueCombinaison(chiffres, k, choix => {
+            let union = 0, masqueChiffres = 0;
+            for (const n of choix) { union |= positions[n]; masqueChiffres |= 1 << (n - 1); }
+            if (nombreDeBits(union) !== k) return false;
+            unite.forEach((i, p) => {
+                if ((union & (1 << p)) && eliminer(etat, i, ~masqueChiffres & 0x1FF)) progres = true;
+            });
+            return false;
+        });
+    }
+    return progres;
+}
+
+// Poisson de taille k (2 = X-Wing, 3 = Swordfish) : si, dans k lignes, un chiffre n'est
+// possible que dans les mêmes k colonnes, on le retire de ces colonnes dans les autres lignes
+// (et inversement en échangeant lignes et colonnes).
+function poisson(etat, k) {
+    let progres = false;
+    for (const enLignes of [true, false]) {
+        const indice = (a, b) => enLignes ? a * 9 + b : b * 9 + a;
+        for (let n = 1; n <= 9; n++) {
+            const bit = 1 << (n - 1);
+            const masques = [];
+            const rangees = [];
+            for (let a = 0; a < 9; a++) {
+                let m = 0;
+                for (let b = 0; b < 9; b++) if (etat.cand[indice(a, b)] & bit) m |= 1 << b;
+                masques.push(m);
+                const nb = nombreDeBits(m);
+                if (nb >= 2 && nb <= k) rangees.push(a);
+            }
+            if (rangees.length < k) continue;
+            pourChaqueCombinaison(rangees, k, choix => {
+                let union = 0;
+                for (const a of choix) union |= masques[a];
+                if (nombreDeBits(union) !== k) return false;
+                for (let a = 0; a < 9; a++) {
+                    if (choix.includes(a)) continue;
+                    for (let b = 0; b < 9; b++) {
+                        if ((union & (1 << b)) && eliminer(etat, indice(a, b), bit)) progres = true;
+                    }
+                }
+                return false;
+            });
+        }
+    }
+    return progres;
+}
+
+// XY-Wing : un pivot {x,y} voit deux pinces {x,z} et {y,z} -> l'une des deux pinces vaut
+// forcément z, donc z est exclu de toute case qui voit les deux pinces.
+function xyWing(etat) {
+    let progres = false;
+    const bivalues = [];
+    for (let i = 0; i < 81; i++) if (nombreDeBits(etat.cand[i]) === 2) bivalues.push(i);
+
+    for (const pivot of bivalues) {
+        const pinces = bivalues.filter(i => SONT_VOISINES[pivot][i]);
+        for (const p1 of pinces) for (const p2 of pinces) {
+            if (p1 >= p2) continue;
+            const mp = etat.cand[pivot], m1 = etat.cand[p1], m2 = etat.cand[p2];
+            if (nombreDeBits(mp) !== 2 || nombreDeBits(m1) !== 2 || nombreDeBits(m2) !== 2) continue; // modifié entre-temps
+            const z = m1 & m2;
+            if (nombreDeBits(z) !== 1 || (z & mp) !== 0) continue;   // un seul chiffre commun, absent du pivot
+            if (((m1 | m2) & ~z) !== mp) continue;                  // les deux autres chiffres sont ceux du pivot
+            for (let j = 0; j < 81; j++) {
+                if (SONT_VOISINES[p1][j] && SONT_VOISINES[p2][j] && eliminer(etat, j, z)) progres = true;
+            }
+        }
+    }
+    return progres;
+}
+
+// Les techniques connues, de la plus simple à la plus difficile. Pour changer ce que veut dire
+// "moyen" ou "difficile", il suffit de changer le niveau d'une technique ici.
+const TECHNIQUES = [
+    { nom: "candidat unique caché",      niveau: 1, appliquer: candidatUniqueCache },
+    { nom: "candidat unique nu",         niveau: 1, appliquer: candidatUniqueNu },
+    { nom: "candidats verrouillés",      niveau: 2, appliquer: candidatsVerrouilles },
+    { nom: "paire nue",                  niveau: 2, appliquer: e => sousEnsembleNu(e, 2) },
+    { nom: "paire cachée",               niveau: 2, appliquer: e => sousEnsembleCache(e, 2) },
+    { nom: "triplet nu",                 niveau: 2, appliquer: e => sousEnsembleNu(e, 3) },
+    { nom: "triplet caché",              niveau: 3, appliquer: e => sousEnsembleCache(e, 3) },
+    { nom: "quadruplet nu",              niveau: 3, appliquer: e => sousEnsembleNu(e, 4) },
+    { nom: "x-wing",                     niveau: 3, appliquer: e => poisson(e, 2) },
+    { nom: "xy-wing",                    niveau: 3, appliquer: xyWing },
+    { nom: "swordfish",                  niveau: 3, appliquer: e => poisson(e, 3) }
+].sort((a, b) => a.niveau - b.niveau);
+
+// Renvoie { resolu, niveau, techniques } :
+//   resolu     : la grille se résout-elle entièrement avec les techniques de niveau <= niveauMax ?
+//   niveau     : niveau de la technique la plus difficile qu'il a fallu utiliser
+//   techniques : { nom de la technique : nombre d'utilisations }
+function resoudreCommeUnHumain(grille, niveauMax = 3) {
+    const etat = creerEtat(grille);
+    const techniques = {};
+    let niveau = 0;
+
+    while (etat.vides > 0) {
+        let progres = false;
+        for (const t of TECHNIQUES) {
+            if (t.niveau > niveauMax) break;
+            if (t.appliquer(etat)) {
+                techniques[t.nom] = (techniques[t.nom] || 0) + 1;
+                niveau = Math.max(niveau, t.niveau);
+                progres = true;
+                break; // on repart toujours de la technique la plus simple
+            }
+        }
+        if (!progres) return { resolu: false, niveau, techniques };
+    }
+    return { resolu: true, niveau, techniques };
+}
+
+// --- CREUSAGE ---
+// Retire des cases dans un ordre aléatoire. Un retrait est annulé s'il crée plusieurs solutions
+// ou si la grille ne se résout plus avec les techniques de niveau <= config.niveau.
+// On s'arrête quand l'objectif est atteint ET que la grille exige le niveau visé
+// (ou quand on atteint le maximum de cases retirées).
+function creuserGrille(complete, config, objectif, rng) {
+    const puzzle = complete.slice();
+    const positions = melanger(Array.from({ length: 81 }, (_, i) => i), rng);
+    let retirees = 0, niveau = 0, techniques = {};
+
+    for (const pos of positions) {
+        if (retirees >= config.retirer[1]) break;
+        if (retirees >= objectif && niveau >= config.niveau) break;
+
+        const valeur = puzzle[pos];
+        puzzle[pos] = 0;
+        const analyse = aUneSolutionUnique(puzzle) ? resoudreCommeUnHumain(puzzle, config.niveau) : null;
+        if (analyse && analyse.resolu) {
+            retirees++;
+            niveau = analyse.niveau;
+            techniques = analyse.techniques;
+        } else {
+            puzzle[pos] = valeur; // retrait refusé : on remet le chiffre
+        }
+    }
+    return { puzzle, retirees, niveau, techniques };
+}
+
+function enLignes(plat) {
+    return Array.from({ length: 9 }, (_, r) => plat.slice(r * 9, r * 9 + 9));
+}
+
+// Point d'entrée : renvoie { solution, puzzle, niveau, techniques } pour une date et une difficulté
+// (solution et puzzle sont des tableaux 9x9). Même date + même difficulté = toujours la même grille.
+function genererGrille(date, difficulty) {
+    const cle = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}-${difficulty}`;
+    const rng = creerAleatoire(hashTexte(cle));
+    const config = DIFFICULTES[difficulty] || DIFFICULTES.moyen;
+    const objectif = entierAleatoire(rng, config.retirer[0], config.retirer[1]);
+
+    let meilleur = null;
+    for (let essai = 0; essai < ESSAIS_MAX; essai++) {
+        const complete = genererGrilleComplete(rng);
+        const r = creuserGrille(complete, config, objectif, rng);
+        const reussi = r.niveau === config.niveau && r.retirees >= config.retirer[0];
+        // Solution de repli si aucun essai ne réussit : le niveau le plus proche, puis le plus de cases retirées.
+        // (Dans tous les cas la grille a une solution unique et se résout sans deviner.)
+        const score = (reussi ? 100000 : 0) + r.niveau * 1000 + r.retirees;
+        if (!meilleur || score > meilleur.score) meilleur = { ...r, complete, score, reussi };
+        if (reussi) break;
+    }
+
+    return {
+        solution: enLignes(meilleur.complete),
+        puzzle: enLignes(meilleur.puzzle),
+        niveau: meilleur.niveau,
+        techniques: meilleur.techniques,
+        conforme: meilleur.reussi
+    };
 }
 
 // --- RENDU ET INTERACTIONS ---
@@ -117,13 +510,11 @@ function chargerJeu(difficulty) {
     document.querySelectorAll('.difficulty-selector button').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`btn-${difficulty}`).classList.add('active');
 
-    let d = new Date();
-    seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    if(difficulty === 'facile') seed += 1;
-    else if(difficulty === 'difficile') seed += 2;
-
-    fullBoard = generateFullBoard();
-    puzzleBoard = createPuzzle(fullBoard, difficulty);
+    const grille = genererGrille(new Date(), difficulty);
+    fullBoard = grille.solution;
+    puzzleBoard = grille.puzzle;
+    // Pour vérifier la génération : techniques nécessaires à la grille du jour (F12 > Console)
+    console.info(`sudoku ${difficulty} : niveau ${grille.niveau}${grille.conforme ? "" : " (niveau visé non atteint)"}`, grille.techniques);
     
     renderBoard();
     startTimer();
@@ -374,8 +765,6 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
     const pdfPage = document.createElement('div');
     pdfPage.className = `pdf-page ${currentThemeClass}`;
 
-    const savedSeed = seed;
-
     // Génération de 8 grilles au lieu de 9
     for (let i = 0; i < 8; i++) {
         const currentDate = new Date(startDate);
@@ -387,12 +776,7 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
             year: 'numeric'
         });
 
-        seed = currentDate.getFullYear() * 10000 + (currentDate.getMonth() + 1) * 100 + currentDate.getDate();
-        if (difficulty === 'facile') seed += 1;
-        else if (difficulty === 'difficile') seed += 2;
-
-        const full = generateFullBoard();
-        const puzzleData = createPuzzle(full, difficulty).flat();
+        const puzzleData = genererGrille(currentDate, difficulty).puzzle.flat();
 
         const gridCard = document.createElement('div');
         gridCard.className = 'pdf-grid-card';
@@ -444,6 +828,25 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         pdfPage.appendChild(gridCard);
     }
 
+    // Repères de coupe : un trait à chaque extrémité de chaque ligne de coupe
+    // (5 lignes verticales pour 4 colonnes, 3 lignes horizontales pour 2 rangées)
+    for (let k = 0; k <= 4; k++) {
+        for (const cote of ['haut', 'bas']) {
+            const repere = document.createElement('div');
+            repere.className = `pdf-repere-v ${cote}`;
+            repere.style.setProperty('--k', k);
+            pdfPage.appendChild(repere);
+        }
+    }
+    for (let k = 0; k <= 2; k++) {
+        for (const cote of ['gauche', 'droite']) {
+            const repere = document.createElement('div');
+            repere.className = `pdf-repere-h ${cote}`;
+            repere.style.setProperty('--k', k);
+            pdfPage.appendChild(repere);
+        }
+    }
+
     document.body.appendChild(pdfPage);
 
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -477,7 +880,5 @@ document.getElementById('logo-img').addEventListener('dblclick', async () => {
         document.body.style.display = originalBodyDisplay;
         document.body.style.padding = originalBodyPadding;
         document.body.style.margin = originalBodyMargin;
-
-        seed = savedSeed;
     }
 });

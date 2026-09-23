@@ -671,19 +671,31 @@ body.theme4 .difficulty-selector button.active {
 /* ==========================================
    EASTER EGG : FORMAT D'IMPRESSION PDF A3
    ========================================== */
+/* Mise en page : 4 x 2 cartes collées bord à bord, sans espace entre elles. Deux cartes
+   voisines partagent donc la même ligne de coupe, et un seul passage de massicot par ligne
+   suffit : 5 coupes verticales + 3 horizontales pour les 8 grilles.
+   Les repères de coupe sont dans la marge de la feuille, aux deux extrémités de chaque ligne. */
 .pdf-page {
+    --pdf-marge: 8mm;                        /* marge de la feuille, où se trouvent les repères */
+    --pdf-colonne: calc((420mm - 2 * var(--pdf-marge)) / 4); /* largeur d'une carte */
+    --pdf-ligne: calc((296mm - 2 * var(--pdf-marge)) / 2);   /* hauteur d'une carte */
+    --pdf-repere-longueur: 5mm;              /* longueur d'un repère */
+    --pdf-repere-ecart: 1.5mm;               /* espace entre la ligne de coupe et le repère */
+    --pdf-repere-epaisseur: 0.35mm;
+
     box-sizing: border-box !important;
+    position: relative !important;
     margin: 0 !important;
-    padding: 10mm !important;
+    padding: var(--pdf-marge) !important;
     width: 420mm !important; /* Largeur A3 */
     height: 296mm !important; /* Hauteur A3 (296mm pour éviter le saut de page) */
     display: grid !important;
-    gap: 5mm !important;
+    gap: 0 !important;
     max-height: 297mm !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    grid-template-columns: repeat(4, 1fr) !important; /* 4 colonnes */
-    grid-template-rows: repeat(2, 1fr) !important;    /* 2 lignes */
+    grid-template-columns: repeat(4, var(--pdf-colonne)) !important; /* 4 colonnes */
+    grid-template-rows: repeat(2, var(--pdf-ligne)) !important;      /* 2 lignes */
     overflow: hidden !important;
 }
 
@@ -697,19 +709,34 @@ body.theme4 .difficulty-selector button.active {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 3mm;
+    padding: 7mm; /* marge blanche intérieure : la coupe passe à 7 mm de la grille */
     background-color: #ffffff !important;
     position: relative;
-
-    background-image: 
-        linear-gradient(to right, #000000 8px, transparent 8px), linear-gradient(to bottom, #000000 8px, transparent 8px),
-        linear-gradient(to left, #000000 8px, transparent 8px), linear-gradient(to bottom, #000000 8px, transparent 8px),
-        linear-gradient(to right, #000000 8px, transparent 8px), linear-gradient(to top, #000000 8px, transparent 8px),
-        linear-gradient(to left, #000000 8px, transparent 8px), linear-gradient(to top, #000000 8px, transparent 8px);
-    background-position: top left, top left, top right, top right, bottom left, bottom left, bottom right, bottom right;
-    background-size: 8px 1.5px, 1.5px 8px;
-    background-repeat: no-repeat;
 }
+
+/* Repères de coupe (créés par script.js).
+   .pdf-repere-v : trait vertical dans la marge haute ou basse, aligné sur une coupe verticale (--k = 0..4)
+   .pdf-repere-h : trait horizontal dans la marge gauche ou droite, aligné sur une coupe horizontale (--k = 0..2) */
+.pdf-repere-v,
+.pdf-repere-h {
+    position: absolute !important;
+    background-color: #000000 !important;
+    pointer-events: none;
+}
+.pdf-repere-v {
+    width: var(--pdf-repere-epaisseur) !important;
+    height: var(--pdf-repere-longueur) !important;
+    left: calc(var(--pdf-marge) + var(--k) * var(--pdf-colonne) - var(--pdf-repere-epaisseur) / 2) !important;
+}
+.pdf-repere-v.haut { top: calc(var(--pdf-marge) - var(--pdf-repere-ecart) - var(--pdf-repere-longueur)) !important; }
+.pdf-repere-v.bas  { top: calc(296mm - var(--pdf-marge) + var(--pdf-repere-ecart)) !important; }
+.pdf-repere-h {
+    height: var(--pdf-repere-epaisseur) !important;
+    width: var(--pdf-repere-longueur) !important;
+    top: calc(var(--pdf-marge) + var(--k) * var(--pdf-ligne) - var(--pdf-repere-epaisseur) / 2) !important;
+}
+.pdf-repere-h.gauche { left: calc(var(--pdf-marge) - var(--pdf-repere-ecart) - var(--pdf-repere-longueur)) !important; }
+.pdf-repere-h.droite { left: calc(420mm - var(--pdf-marge) + var(--pdf-repere-ecart)) !important; }
 
 .pdf-header {
     display: flex;
